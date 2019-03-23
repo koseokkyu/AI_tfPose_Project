@@ -1,0 +1,4 @@
+## ignore File ##
+*.log
+tf-openpose/images
+tf-openpose/models
