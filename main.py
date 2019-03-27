@@ -1,27 +1,9 @@
-import cv2
-import numpy as np
-import time
-import pandas as pd
+from preprocess import *
+from pose_estimation import *
 
-from tf_pose import common
-from tf_pose.estimator import TfPoseEstimator
-from tf_pose.networks import get_graph_path, model_wh
-import preprocess
-
-train_data = pd.read_csv('./train_data/pose_person_train.csv')
-test_data = pd.read_csv('./train_data/pose_person_test.csv')
-
-print(train_data.columns)
-print(train_data.shape)
-print(test_data.shape)
-
-
-train_data.drop(['Unnamed: 0', 'person'], axis = 1, inplace = True)
-test_data.drop(['Unnamed: 0', 'person'], axis = 1, inplace = True)
-
-train_data = train_data.dropna(axis=0)
-test_data = test_data.dropna(axis=0)
-
-print(train_data.shape)
-print(test_data.shape)
-
+e = create_estimator()
+image = image_read('./new train/1/image 0.jpg')
+humans = img_read_joint(image, e, 368, 256)
+X = lstm_input_convert(humans)
+for i in X:
+    print(i)
