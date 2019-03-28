@@ -1,6 +1,6 @@
 from config import FLAGS
 import cv2
-
+import numpy as np
 from tf_pose import common
 from tf_pose.estimator import TfPoseEstimator
 from tf_pose.networks import get_graph_path, model_wh
@@ -26,6 +26,7 @@ def draw_joint(image, humans):
     image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
     cv2.imshow(image)
     cv2.waitKey(1)
+
 def image_read(img_path):
     return common.read_imgfile(img_path, None, None)
 
@@ -56,4 +57,14 @@ def lstm_input_convert(humans):
     for h in human:
         data = img_scaling(h)
         lstm_input.append(' '.join(str(e) for e in data) +'\n')
-    return lstm_input
+    text = string_to_3d_array(lstm_input)
+
+
+    return text
+
+def string_to_3d_array(lstm_input):
+    temp=[]
+    for e in lstm_input:
+        n_features=len(e.split())
+        temp+=[list(map(float,e.split()))]
+    return np.array(temp).reshape(-1,1,n_features)

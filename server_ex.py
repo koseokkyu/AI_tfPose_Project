@@ -1,11 +1,37 @@
 import io
 import socket
 import struct
-import threading
+import tensorflow as tf
+import numpy as np
+from preprocess import *
+from pose_estimation import *
+
 from PIL import Image
 
+
+sess = tf.Session()
+saver = tf.train.import_meta_graph("./models/lstm.meta")
+saver.restore(sess, "./models/lstm")
+graph = tf.get_default_graph()
+
+pred = graph.get_tensor_by_name('softmax:0')
+x = graph.get_tensor_by_name('Placeholder:0')
+
+def model(image, e) :
+    humans = img_read_joint(np.array(image), e, 368, 256)
+    X = lstm_input_convert(humans)
+    try :
+        prob=sess.run(pred, feed_dict={x: X})
+        if np.max(prob)>0.5:
+            print(np.argmax(prob) + 1)
+            return np.argmax(prob) + 1
+    except ValueError:
+        None
 def main() :
-    IP = "141.223.122.36"
+    e = create_estimator()
+
+
+    IP = ""
     CAPTURE_PORT = 8100
     LABEL_PORT = 8000
 
@@ -64,10 +90,14 @@ def main() :
                 # Rewind the stream, open it as an image with PIL and do some
                 # processing on it
                 image_stream.seek(0)
+
                 image = Image.open(image_stream)
-                dataStr = "image%2s.jpg receive" % num
-                image.save("train_image/image%02s.jpg" % num)
-                num += 1
+
+                #dataStr = "image%2s.jpg receive" % num
+                #image.save("train_image/image%02s.jpg" % num)
+                #num += 1
+
+                dataStr = str(model(image, e))
 
                 label_connection.send(dataStr.encode())
 
