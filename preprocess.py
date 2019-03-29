@@ -1,7 +1,42 @@
 from sklearn.preprocessing import minmax_scale
 
 import numpy as np
+import pandas as pd
+from collections import OrderedDict
 
+def get_xy(human):
+    '''
+
+    :param humans: Human 객체
+    :return: x,y 좌표만 뽑은 dictionary
+    '''
+    dic= {}
+    for i in human.body_parts:
+        dic[str(i)+'_x'] = human.body_parts[i].x
+        dic[str(i)+'_y'] = human.body_parts[i].y
+    return dic
+
+def fill_na(temp_dic,cur_dic):
+    '''
+
+    :param temp_hum: 이전 frame human joint
+    :param cur_hum: 현재 frame human joint
+    :return: 결측치를 채운 현재 관절
+    '''
+    #temp_dic=get_xy(temp_hum)
+    #cur_dic = get_xy(cur_hum)
+    for k in temp_dic.keys():
+        if k not in cur_dic.keys():
+            cur_dic[k]=temp_dic[k]
+    return cur_dic
+
+def dict_to_list(dict):
+    '''
+
+    :param dict: 결측치 채워진 human joint
+    :return: dictionary를 list로 반환
+    '''
+    return list(OrderedDict(sorted(dict.items())).values())
 
 def img_scaling(point_list):
     '''
@@ -17,7 +52,7 @@ def img_scaling(point_list):
     X = []
     Y = []
     result = []
-    point_list = point_list.split(',')
+    #point_list = point_list.split(',')
     for i in range(len(point_list)):
         if i % 2 == 0:
             X.append(float(point_list[i]))
@@ -39,23 +74,12 @@ def img_scaling(point_list):
     return result
 
 
-def get_xy(humans):
-    '''
-
-    :param humans: 이미지에 잡힌 모든 사람의 정제되지 않은 관절 포인트
-    :return: (0_x, 0_y, 1_x, 1_y ....) 전처리를 거친 포인트 (lstm 모델 input에 맞춤)
-    '''
-    h_list = list(map(str,humans))
-    result = []
-    for hm in h_list:  #모든 사람에 대해
-        #print(hm)
-        temp = []
-        hm2 = hm.split('BodyPart:')
-        for hm3 in hm2:
-            if hm3 == '':
-                continue
-            hm4 = hm3.split('-')[1].split('score=')[0].replace('(','').replace(')','').split(',')
-            temp.append(str(float(hm4[0])*255) + ','+ str(float(hm4[1])*255))
-        temp2 = str(','.join(temp))
-        result.append(temp2)
+def train_get_bodyparts_xy(humans):
+    result = pd.DataFrame()
+    for h in humans:
+        dic= {}
+        for i in h.body_parts:
+            dic[str(i)+'_x'] = h.body_parts[i].x
+            dic[str(i)+'_y'] = h.body_parts[i].y
+        result.append(dic)
     return result

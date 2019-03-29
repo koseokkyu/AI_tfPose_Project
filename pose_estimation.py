@@ -24,7 +24,7 @@ def draw_joint(image, humans):
     :return:
     '''
     image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
-    cv2.imshow(image)
+    cv2.imshow(" ",image)
     cv2.waitKey(1)
 
 def image_read(img_path):

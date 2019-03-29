@@ -3,14 +3,16 @@ class FLAGS():
 	default
 	'''
 	model = 'cmu'
-	resize = '256x224'
+	resize = '368x256'
 	resize_out_ratio = 4.0
 #Path
 	train_path = "train_data/"
 	test_path = "test_data/"
 # LSTM variable
-	LABELS = ["1","2","3","4","5"] 
-	n_frames = 1
+	LABELS = ["1","2","3","4","5"]
+	n_input = 36
+	n_steps = 20
+	n_frames = 20
 	n_features = 36
 	n_hiddens = 34
 	n_outputs = 5
