@@ -10,6 +10,7 @@ def get_xy(human):
     :param humans: Human 객체
     :return: x,y 좌표만 뽑은 dictionary
     '''
+
     dic= {}
     for i in human.body_parts:
         dic[str(i)+'_x'] = human.body_parts[i].x
@@ -23,8 +24,8 @@ def fill_na(temp_dic,cur_dic):
     :param cur_hum: 현재 frame human joint
     :return: 결측치를 채운 현재 관절
     '''
-    #temp_dic=get_xy(temp_hum)
-    #cur_dic = get_xy(cur_hum)
+    #temp_dic=get_xy(temp_dic)
+    #cur_dic = get_xy(cur_dic)
     for k in temp_dic.keys():
         if k not in cur_dic.keys():
             cur_dic[k]=temp_dic[k]
@@ -64,9 +65,6 @@ def img_scaling(point_list):
     y_scale = minmax_scale(Y)  # minmax로 사람의 키를 통일
     x_mean = np.mean(X)
     x_scale = (X - x_mean) / (y_max - y_min) + 0.5  # x 비율을 키(y)와 동일하게 scale
-
-    y_scale = y_scale * 255
-    x_scale = x_scale * 255
 
     for i in range(len(x_scale)):
         result.append(x_scale[i])

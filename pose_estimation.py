@@ -58,8 +58,6 @@ def lstm_input_convert(humans):
         data = img_scaling(h)
         lstm_input.append(' '.join(str(e) for e in data) +'\n')
     text = string_to_3d_array(lstm_input)
-
-
     return text
 
 def string_to_3d_array(lstm_input):

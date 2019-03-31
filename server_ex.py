@@ -1,32 +1,81 @@
 import io
 import socket
 import struct
+import os
 import tensorflow as tf
+
 import numpy as np
 from preprocess import *
 from pose_estimation import *
-
+from collections import deque
 from PIL import Image
+
+import itertools
 
 
 sess = tf.Session()
-saver = tf.train.import_meta_graph("./models/lstm.meta")
-saver.restore(sess, "./models/lstm")
+static_saver = tf.train.import_meta_graph("./models/dynamic_lstm/lstm.meta")
+static_saver.restore(sess, './models/dynamic_lstm/lstm')
 graph = tf.get_default_graph()
 
 pred = graph.get_tensor_by_name('softmax:0')
 x = graph.get_tensor_by_name('Placeholder:0')
+img_q = deque()     # 원본이미지 담은 queue
+joint_q = deque()   # 관절 좌표 담은 queue
+motion_q = deque()  # 20frame씩 담은 queue
+
+init_flag = True
+Temp_joint = None
+Cur_joint = None
 
 def model(image, e) :
+    global init_flag, Temp_joint, Cur_joint, joint_q
+
     humans = img_read_joint(np.array(image), e, 368, 256)
-    X = lstm_input_convert(humans)
+    if len(humans) > 0:
+        Cur_joint = get_xy(humans[0])
+    else:
+        return
+    #print(Cur_joint)
+    if init_flag:
+        if len(Cur_joint)!=36:
+            print("your joints are not fully captured!")
+            return
+        Temp_joint = Cur_joint
+        init_flag = False
+        return
+
+    Cur_joint = fill_na(Temp_joint, Cur_joint)  #결측치 채운뒤,
+    Temp_joint = Cur_joint
+    Cur_joint = dict_to_list(Cur_joint)
+    Cur_joint = img_scaling(Cur_joint)
+
+    X = np.array(Cur_joint)
+    joint_q.append(X)   # 관절 queue에 추가
+    # print(Cur_joint)
+
+    if len(joint_q) >= FLAGS.n_frames:  # 특정 frame개수만큼 채워지면
+        print("15")
+        motion = list(itertools.islice(joint_q, FLAGS.n_frames))
+        # print(motion)
+        motion = np.expand_dims(motion, axis=0)
+        try:
+            prob = sess.run(pred, feed_dict={x: motion})
+            print(prob, np.argmax(prob) + 1)
+        except ValueError:
+            None
+        joint_q.popleft()
+
+    X = np.expand_dims(X, axis=0)
+    X = np.expand_dims(X, axis=0)
+    print(X.shape)
     try :
         prob=sess.run(pred, feed_dict={x: X})
-        if np.max(prob)>0.5:
-            print(np.argmax(prob) + 1)
-            return np.argmax(prob) + 1
+        print(prob, np.argmax(prob) + 1)
+            #return np.argmax(prob) + 1
     except ValueError:
         None
+
 def main() :
     e = create_estimator()
 
@@ -92,16 +141,16 @@ def main() :
                 image_stream.seek(0)
 
                 image = Image.open(image_stream)
-
+                model(image, e)
                 #dataStr = "image%2s.jpg receive" % num
-                #image.save("train_image/image%02s.jpg" % num)
-                #num += 1
+                #image.save("./images/dynamic/seal/image%02s.jpg" % num)
+                num += 1
 
-                dataStr = str(model(image, e))
+                #dataStr = str(model(image, e))
 
-                label_connection.send(dataStr.encode())
+#                label_connection.send(dataStr.encode())
 
-                print('Image is verified')
+                #print('Image is verified')
 
         except KeyboardInterrupt :
             capture_connection.close()
