@@ -28,6 +28,11 @@ def draw_joint(image, humans):
     cv2.waitKey(1)
 
 def image_read(img_path):
+    '''
+
+    :param img_path: 읽을 image 경로
+    :return: 경로를 통해 읽은 이미지
+    '''
     return common.read_imgfile(img_path, None, None)
 
 def img_read_joint(image, e, w, h):
@@ -41,16 +46,14 @@ def img_read_joint(image, e, w, h):
     :return: image, humans
     '''
 
-    #image = common.read_imgfile(img_path, None, None)
-    #image = cv2.imread(img_path)
     humans = e.inference(image, resize_to_default=(w > 0 and h > 0), upsample_size=FLAGS.resize_out_ratio)
     return humans
 
 def lstm_input_convert(humans):
     '''
 
-    :param humans:
-    :return:
+    :param humans: 정제되지 않은 human객체
+    :return:    lstm input 형식에 맞게 x,y좌표로 변환
     '''
     human = get_xy(humans)
     lstm_input=[]
@@ -61,6 +64,11 @@ def lstm_input_convert(humans):
     return text
 
 def string_to_3d_array(lstm_input):
+    '''
+
+    :param lstm_input: lstm_input_convert에서 변환한 human객체의 x,y좌표
+    :return: 3차원 numpy array
+    '''
     temp=[]
     for e in lstm_input:
         n_features=len(e.split())

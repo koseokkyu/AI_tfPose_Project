@@ -24,11 +24,9 @@ def fill_na(temp_dic,cur_dic):
     :param cur_hum: 현재 frame human joint
     :return: 결측치를 채운 현재 관절
     '''
-    #temp_dic=get_xy(temp_dic)
-    #cur_dic = get_xy(cur_dic)
     for k in temp_dic.keys():
         if k not in cur_dic.keys():
-            cur_dic[k]=temp_dic[k]
+            cur_dic[k] = temp_dic[k]
     return cur_dic
 
 def dict_to_list(dict):
@@ -53,7 +51,6 @@ def img_scaling(point_list):
     X = []
     Y = []
     result = []
-    #point_list = point_list.split(',')
     for i in range(len(point_list)):
         if i % 2 == 0:
             X.append(float(point_list[i]))
@@ -66,18 +63,7 @@ def img_scaling(point_list):
     x_mean = np.mean(X)
     x_scale = (X - x_mean) / (y_max - y_min) + 0.5  # x 비율을 키(y)와 동일하게 scale
 
-    for i in range(len(x_scale)):
+    for i in range(len(x_scale)):   # 0_x, 0_y, 1_x, 1_y순으로 list에 저장
         result.append(x_scale[i])
         result.append(y_scale[i])
-    return result
-
-
-def train_get_bodyparts_xy(humans):
-    result = pd.DataFrame()
-    for h in humans:
-        dic= {}
-        for i in h.body_parts:
-            dic[str(i)+'_x'] = h.body_parts[i].x
-            dic[str(i)+'_y'] = h.body_parts[i].y
-        result.append(dic)
     return result

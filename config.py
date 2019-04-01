@@ -1,46 +1,47 @@
 class FLAGS():
-	'''
-	default
-	'''
+# cmu model parameter
 	model = 'cmu'
 	resize = '368x256'
 	w = 368
 	h = 256
 	resize_out_ratio = 4.0
-#Path
-	train_path = "train/"
-	test_path = "test/"
-
-	d_path = "./dynamic/"
-	s_path = "./static/"
+# Path
+	train_path = "./train/"
+	test_path = "./test/"
 
 	images = "./images/"
-
-	model_path = "./models/"
-	static_lstm = model_path + "static_lstm/"
-	dynamic_lstm = model_path + "dynamic_lstm/"
-
-# LSTM variable
+	model_path = "./models"
+	lstm_model = "lstm"
+# LSTM parameter
 	D_LABEL = {
-		"bird":0,
-		"kingkong":1,
-		"seal":2
-	}
-	S_LABEL = {
-		"chicken":0,
-		"duck":1,
-		"frog":2,
-		"lion":3
-	}
+		0:"duck",
+		1:"lion",
+		2:"chicken",
+		3:"frog",
+		4:"kingkong",
+		5:"bird",
+		6:"seal",
+		7:"tiger",
+		8:"dog",
+		9:"crab",
+		10:"snake",
 
-	n_input = 36
-	n_steps = 15
-	n_frames = 15
+		11:"swim",
+		12:"basketball",
+		13:"baseball",
+		14:"soccer"
+	}
+	'''
+	LSTM input shape = (None, n_frames, n_input)
+	'''
+	n_input = 36  		# 관절 개수
+	n_steps = 20
+	n_frames = 20		# 연속 프레임 개수
 	n_features = 36
 	n_hiddens = 34
-	n_outputs = 5
+	n_outputs = 14		# 분류 class 개수
 
-	threshold = 0.8
+	threshold = 0.95
 #updated for learning-rate decay
 # calculated as: decayed_learning_rate = learning_rate * decay_rate ^ (global_step / decay_steps)
 	lr = 0.0025 #used if decaying_learning_rate set to False
