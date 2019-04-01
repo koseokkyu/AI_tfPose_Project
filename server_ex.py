@@ -14,8 +14,6 @@ from get_model import ImportGraph
 import itertools
 
 
-#static_model = ImportGraph("./models/static_lstm/lstm")
-#lstm_model = ImportGraph(os.path.join(FLAGS.model, FLAGS.lstm_model))
 lstm_model = ImportGraph("./models/lstm_20/lstm_20")
 
 joint_q = deque()   # 관절 좌표 담은 queue
@@ -24,7 +22,10 @@ init_flag = True
 Temp_joint = None
 Cur_joint = None
 
-def model(image, e):
+def send_label(conn, data) :
+    conn.send(data.encode())
+
+def execute_model(image, e):
     global init_flag, Temp_joint, Cur_joint, joint_q
 
     humans = img_read_joint(np.array(image), e, 368, 256)
@@ -66,6 +67,7 @@ def model(image, e):
 
 def main() :
     e = create_estimator()
+
     IP = ""
     CAPTURE_PORT = 8100
     LABEL_PORT = 8000
@@ -95,16 +97,17 @@ def main() :
     s_label_socket.listen(5)
     print("label socket listen")
 
-
-    num = 0
+    pre_pose = ''
 
     while True :
-        # Accept a single connection and make a file-like object out of it
-        capture_connection = s_capture_socket.accept()[0].makefile('rb')
-        label_connection = s_label_socket.accept()[0]
-
         try:
-             while True:
+            # Accept a single connection and make a file-like object out of it
+            capture_connection = s_capture_socket.accept()[0].makefile('rb')
+            label_connection = s_label_socket.accept()[0]
+
+            while True:
+                model_pose = ''
+
                 # Read the length of the image as a 32-bit unsigned int. If the
                 # length is zero, quit the loop
                 image_recv = capture_connection.read(struct.calcsize('<L'))
@@ -126,23 +129,24 @@ def main() :
                 image_stream.seek(0)
 
                 image = Image.open(image_stream)
-                #model(image, e)
-                #dataStr = "image%2s.jpg receive" % num
-                # image.save("./images/dynamic/soccer/3/image%02s.jpg" % num)
-                num += 1
 
-                dataStr = str(model(image, e))
+                model_pose = str(model(image, e))
 
-                #label_connection.send(dataStr.encode())
+                if pre_pose != model_pose :
+                    send_label(label_connection, model_pose)
+                    pre_pose = model_pose
 
-                #print('Image is verified')
 
         except KeyboardInterrupt :
-            capture_connection.close()
-            s_capture_socket.close()
-            s_label_socket.close()
+            break
 
-            return 0
+        capture_connection.close()
+        label_connection.close()
+
+    s_capture_socket.close()
+    s_label_socket.close()
+
+    return 0
 
 
 if __name__ == "__main__" :
