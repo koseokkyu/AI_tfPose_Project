@@ -19,6 +19,7 @@ import itertools
 lstm_model = ImportGraph("./models/lstm_20/lstm_20")
 
 joint_q = deque()   # 관절 좌표 담은 queue
+result_q = deque()
 
 init_flag = True
 Temp_joint = None
@@ -51,15 +52,22 @@ def model(image, e):
     X = np.array(Cur_joint)
     joint_q.append(X)   # 관절 queue에 추가
 
+    if len(result_q) >= 3:
+        result = list(itertools.islice(joint_q, 3))
+        print(max(result, key=result.count))
+        result.clear()
+        return max(result, key=result.count)
     if len(joint_q) >= FLAGS.n_frames:  # 특정 frame개수만큼 채워지면
         motion = list(itertools.islice(joint_q, FLAGS.n_frames))
         motion = np.expand_dims(motion, axis=0)
         joint_q.popleft()
+
         try:
             prob = lstm_model.run(motion)
             if np.max(prob) > FLAGS.threshold:
-                print("dynamic: ", FLAGS.D_LABEL[np.argmax(prob)])
-                return np.argmax(prob)
+                result_q.append(np.argmax(prob))
+                # print("dynamic: ", FLAGS.D_LABEL[np.argmax(prob)])
+                #return np.argmax(prob)
         except ValueError:
             None
 
