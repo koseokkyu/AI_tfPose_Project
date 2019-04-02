@@ -14,7 +14,7 @@ from get_model import ImportGraph
 import itertools
 
 
-lstm_model = ImportGraph("./models/lstm_20/lstm_20")
+lstm_model = ImportGraph("./models/lstm_8/lstm_10")
 
 joint_q = deque()   # 관절 좌표 담은 queue
 result_q = deque()
@@ -23,24 +23,27 @@ init_flag = True
 Temp_joint = None
 Cur_joint = None
 
+prev_time = 0
+next_time = None
 def send_label(conn, data) :
     conn.send(data.encode())
 
 def execute_model(image, e):
-    global init_flag, Temp_joint, Cur_joint, joint_q
+    global init_flag, Temp_joint, Cur_joint, joint_q, prev_time, next_time
 
     humans = img_read_joint(np.array(image), e, 368, 256)
     if len(humans) > 0:
         Cur_joint = get_xy(humans[0])
     else:
-        return
+        return ""
     if init_flag:
-        if len(Cur_joint)!=36:
+        if len(Cur_joint) != 36:
             print("your joints are not fully captured!")
-            return
+            return ""
+        prev_time = time.time()
         Temp_joint = Cur_joint
         init_flag = False
-        return
+        return ""
 
     '''
     이전프레임으로 결측치 채운 뒤, list로 변환. 
@@ -53,25 +56,43 @@ def execute_model(image, e):
     X = np.array(Cur_joint)
     joint_q.append(X)   # 관절 queue에 추가
 
-    if len(result_q) >= 3:
-        result = list(itertools.islice(joint_q, 3))
-        print(max(result, key=result.count))
-        result.clear()
-        return max(result, key=result.count)
+
     if len(joint_q) >= FLAGS.n_frames:  # 특정 frame개수만큼 채워지면
         motion = list(itertools.islice(joint_q, FLAGS.n_frames))
         motion = np.expand_dims(motion, axis=0)
         joint_q.popleft()
 
+
         try:
             prob = lstm_model.run(motion)
+            next_time = time.time()
+            #print("20 frame motion time : ", next_time - prev_time)
             if np.max(prob) > FLAGS.threshold:
-                result_q.append(np.argmax(prob))
-                # print("dynamic: ", FLAGS.D_LABEL[np.argmax(prob)])
-                #return np.argmax(prob)
-        except ValueError:
-            None
+                # result_q.append(np.argmax(prob))
+                # joint_q.clear()
+                pose = np.argmax(prob)
+                result_q.append(pose)
+                # print(FLAGS.D_LABEL[np.argmax(prob)])
+                # print("10 frame motion time : ", next_time - prev_time)
 
+                return FLAGS.D_LABEL[np.argmax(prob)]
+                # print("dynamic: ", FLAGS.D_LABEL[np.argmax(prob)])
+                # return np.argmax(prob)
+        except ValueError:
+            return ""
+    '''
+    if len(result_q) == FLAGS.m_count:
+        next_time = time.time()
+
+        print("10 frame motion time : ", next_time - prev_time)
+
+        result = list(itertools.islice(result_q, FLAGS.m_count))
+        pose = max(result, key=result.count)
+        print(result, FLAGS.D_LABEL[pose])
+        result_q.clear()
+        return FLAGS.D_LABEL[pose]
+    '''
+    return ""
 
 def main() :
     e = create_estimator()
@@ -106,6 +127,7 @@ def main() :
     print("label socket listen")
 
     pre_pose = ''
+    execute_time = time.time()
 
     while True :
         try:
@@ -135,15 +157,17 @@ def main() :
                 # Rewind the stream, open it as an image with PIL and do some
                 # processing on it
                 image_stream.seek(0)
-
                 image = Image.open(image_stream)
 
-                model_pose = str(model(image, e))
+                model_pose = str(execute_model(image, e))
 
-                if pre_pose != model_pose :
+                if model_pose != "" and pre_pose != model_pose:
+                    print(model_pose)
                     send_label(label_connection, model_pose)
+                    image_stream.flush()
                     pre_pose = model_pose
-
+                    if time.time() - execute_time > 5:
+                        pre_pose = ''
 
         except KeyboardInterrupt :
             break

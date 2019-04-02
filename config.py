@@ -35,13 +35,15 @@ class FLAGS():
 	LSTM input shape = (None, n_frames, n_input)
 	'''
 	n_input = 36  		# 관절 개수
-	n_steps = 20
-	n_frames = 20		# 연속 프레임 개수
+	n_steps = 10
+	n_frames = 10		# 연속 프레임 개수
 	n_features = 36
 	n_hiddens = 34
-	n_outputs = 14		# 분류 class 개수
+	n_outputs = 15		# 분류 class 개수
 
 	threshold = 0.95
+
+	m_count = 3
 #updated for learning-rate decay
 # calculated as: decayed_learning_rate = learning_rate * decay_rate ^ (global_step / decay_steps)
 	lr = 0.0025 #used if decaying_learning_rate set to False
